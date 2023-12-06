@@ -55,18 +55,35 @@ jobs:
         run: |
           PARAMETER_NAME="/poja-prime/prod/api/url"
 
+          echo "Attempting to retrieve SSM parameter $PARAMETER_NAME..."
+
+          # Essayer de récupérer le paramètre SSM
           API_URL_SSM=$(aws ssm get-parameter --name $PARAMETER_NAME --query Parameter.Value --with-decryption --output text 2>/dev/null)
 
+          # Vérifier si la commande a réussi (pas d'erreur)
           if [ $? -eq 0 ]; then
+            echo "SSM parameter retrieved successfully."
+
+            # Vérifier si la valeur du paramètre est non vide
             if [ -n "$API_URL_SSM" ]; then
+              echo "SSM parameter value is not empty."
+
               sudo apt-get install -y jq
 
+              # Essayer d'extraire l'URL avec jq
               API_URL=$(echo "$API_URL_SSM" | jq -r '.' 2>/dev/null)
 
+              # Vérifier si l'extraction a réussi
               if [ -n "$API_URL" ]; then
+                echo "API_URL extracted successfully: $API_URL"
+
+                # Essayer d'effectuer la requête curl
                 curl --max-time 60 --fail "$API_URL"/uuid-created
 
-                if [ $? -ne 0 ]; then
+                # Vérifier le code de sortie de curl
+                if [ $? -eq 0 ]; then
+                  echo "Curl request succeeded."
+                else
                   echo "Failed to perform curl request."
                   exit 1
                 fi
