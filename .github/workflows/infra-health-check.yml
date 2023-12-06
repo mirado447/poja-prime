@@ -53,8 +53,32 @@ jobs:
 
       - name: GET /uuid-created
         run: |
-          export API_URL_SSM=$(aws ssm get-parameter --name /poja-prime/prod/api/url --query Parameter.Value --with-decryption --output text)
-          sudo apt-get install jq
-          export API_URL=`echo $API_URL_SSM | jq -r '.Parameter.Value'`
-          echo $API_URL_SSM
-          curl --max-time 60 --fail "$API_URL"/uuid-created
+          PARAMETER_NAME="/poja-prime/prod/api/url"
+
+          API_URL_SSM=$(aws ssm get-parameter --name $PARAMETER_NAME --query Parameter.Value --with-decryption --output text 2>/dev/null)
+
+          if [ $? -eq 0 ]; then
+            if [ -n "$API_URL_SSM" ]; then
+              sudo apt-get install -y jq
+
+              API_URL=$(echo "$API_URL_SSM" | jq -r '.' 2>/dev/null)
+
+              if [ -n "$API_URL" ]; then
+                curl --max-time 60 --fail "$API_URL"/uuid-created
+
+                if [ $? -ne 0 ]; then
+                  echo "Failed to perform curl request."
+                  exit 1
+                fi
+              else
+                echo "Failed to extract API_URL from the SSM parameter value."
+                exit 1
+              fi
+            else
+              echo "SSM parameter $PARAMETER_NAME has an empty value."
+              exit 1
+            fi
+          else
+            echo "Failed to retrieve SSM parameter $PARAMETER_NAME."
+            exit 1
+          fi
