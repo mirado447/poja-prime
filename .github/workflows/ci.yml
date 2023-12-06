@@ -31,4 +31,10 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
 
+      - name: Display contents of the project directory
+        run: ls -la
+
+      - name: Set execute permissions for gradlew
+        run: chmod +x gradlew
+
       - run: ./gradlew test
