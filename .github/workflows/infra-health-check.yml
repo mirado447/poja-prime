@@ -56,4 +56,5 @@ jobs:
           export API_URL_SSM=$(aws ssm get-parameter --name /poja-prime/prod/api/url --query Parameter.Value --with-decryption --output text)
           sudo apt-get install jq
           export API_URL=`echo $API_URL_SSM | jq -r '.Parameter.Value'`
+          echo $API_URL_SSM
           curl --max-time 60 --fail "$API_URL"/uuid-created
